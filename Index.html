@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mitigata | Security Operations Command Center</title>
+<!-- Tailwind CSS CDN with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Three.js for the Globe -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0f49bd',
+            accent: '#22d3ee', // Cyan neon
+            darkBg: '#020617',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          borderRadius: {
+            'custom': '4px', // ROUND_FOUR
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="global-layout">
+    body {
+      background-color: #020617;
+      color: #e2e8f0;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+    .grid-bg {
+      background-image: 
+        linear-gradient(rgba(15, 73, 189, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 73, 189, 0.05) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(15, 73, 189, 0.2);
+      border-radius: 2px;
+    }
+    .glow-text {
+      text-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+    }
+    .scanline {
+      width: 100%;
+      height: 1px;
+      background: rgba(34, 211, 238, 0.05);
+      position: absolute;
+      top: 0;
+      animation: scan 10s linear infinite;
+      pointer-events: none;
+      z-index: 100;
+    }
+    @keyframes scan {
+      from { top: 0; } 
+      to { top: 100%; }
+    }
+    .hud-ring {
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .rotate-slow { animation: spin 20s linear infinite; }
+    .rotate-fast { animation: spin 10s linear reverse infinite; }
+    @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+    ::-webkit-scrollbar { width: 2px; }
+    ::-webkit-scrollbar-thumb { background: #0f49bd; }
+  </style>
+</head>
+<body class="h-screen flex flex-col grid-bg relative">
+<div class="scanline"></div>
+<!-- BEGIN: MainHeader -->
+<header class="h-16 border-b border-primary/30 flex items-center justify-between px-6 glass-panel z-50 m-2" data-purpose="header-container">
+<div class="flex items-center space-x-4">
+<div class="w-8 h-8 bg-primary rounded-custom flex items-center justify-center">
+<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-widest text-white">MITIGATA</h1>
+<p class="text-[10px] text-accent uppercase tracking-tighter opacity-80">Security Operations Command Center</p>
+</div>
+</div>
+<!-- Live Clock Display -->
+<div class="flex items-center space-x-6 font-mono text-sm text-accent" data-purpose="clock-widget">
+<div class="hidden md:block" id="date-display">--/--/----</div>
+<div class="text-xl font-bold glow-text" id="clock-display">00:00:00</div>
+</div>
+<div class="hidden xl:flex items-center space-x-4 border-l border-primary/30 pl-4 ml-4 text-[9px] opacity-60">
+<div>CPU: <span class="text-accent">24.2%</span></div>
+<div>MEM: <span class="text-accent">12.8GB</span></div>
+<div>LOAD: <span class="text-accent">0.82 / 0.45 / 0.12</span></div>
+</div></header>
+<!-- END: MainHeader -->
+<!-- BEGIN: MainDashboardArea -->
+<main class="flex-1 flex overflow-hidden p-1 gap-1 relative" data-purpose="dashboard-layout">
+<!-- LEFT SIDEBAR: System Status -->
+<aside class="w-64 flex flex-col gap-1 z-10" data-purpose="sidebar-left">
+<section class="glass-panel p-4 flex-none">
+<h2 class="text-xs font-bold text-accent uppercase mb-3 border-b border-primary/20 pb-1">Threat Level</h2>
+<div class="flex flex-col items-center py-2">
+<div class="relative w-32 h-16 overflow-hidden">
+<div class="absolute inset-0 border-t-8 border-l-8 border-r-8 border-green-500 rounded-t-full opacity-20"></div>
+<div class="absolute inset-0 border-t-8 border-l-8 border-r-8 border-green-400 rounded-t-full" style="clip-path: inset(0 60% 0 0);"></div>
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
+<span class="text-lg font-bold text-green-400">GUARDED</span>
+</div>
+</div>
+<p class="text-[10px] text-slate-400 mt-1">Status: Operational</p>
+</div>
+</section><section class="glass-panel p-2 flex-none">
+<h2 class="text-[9px] font-bold text-accent uppercase mb-2 border-b border-primary/20 pb-1">Network Flow</h2>
+<div class="grid grid-cols-4 gap-1">
+<div class="h-8 bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-[8px]">
+<span class="text-accent">RX</span>
+<span class="text-white">452MB/s</span>
+</div>
+<div class="h-8 bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-[8px]">
+<span class="text-accent">TX</span>
+<span class="text-white">128MB/s</span>
+</div>
+<div class="h-8 bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-[8px]">
+<span class="text-accent">TCP</span>
+<span class="text-white">1.2k</span>
+</div>
+<div class="h-8 bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-[8px]">
+<span class="text-accent">UDP</span>
+<span class="text-white">854</span>
+</div>
+</div>
+</section>
+<section class="glass-panel p-4 flex-1 flex flex-col min-h-0">
+<h2 class="text-xs font-bold text-accent uppercase mb-3 border-b border-primary/20 pb-1">Real-time Logs</h2>
+<div class="font-mono text-[10px] space-y-2 overflow-y-auto pr-1" id="log-container">
+<!-- Logs will be injected here -->
+</div>
+</section>
+</aside>
+<!-- CENTER AREA: 3D Globe & Floating Data -->
+<div class="flex-1 relative glass-panel overflow-hidden" data-purpose="globe-container" id="globe-viewport">
+<!-- 3D Globe Canvas -->
+<div class="absolute inset-0" id="canvas-container"></div>
+<!-- Floating Coordinate Overlays -->
+<div class="absolute top-4 left-4 font-mono text-[10px] text-accent/60 pointer-events-none" id="coords-display-left">
+<!-- Rapidly updating coords -->
+</div>
+<div class="absolute bottom-4 right-4 font-mono text-[10px] text-accent/60 pointer-events-none text-right" id="coords-display-right">
+<!-- Rapidly updating coords -->
+</div>
+<!-- Center Target UI -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-64 h-64 border border-accent/10 rounded-full flex items-center justify-center">
+<div class="w-48 h-48 border border-accent/20 rounded-full animate-pulse"></div>
+</div>
+</div>
+<div class="absolute inset-0 pointer-events-none">
+<div class="hud-ring w-96 h-96 border-dashed opacity-30 rotate-slow"></div>
+<div class="hud-ring w-[30rem] h-[30rem] border-accent/10 rotate-fast"></div>
+<div class="hud-ring w-80 h-80">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-4 bg-accent/40"></div>
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-4 bg-accent/40"></div>
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-1 bg-accent/40"></div>
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-1 bg-accent/40"></div>
+</div>
+<div class="absolute top-4 right-4 flex flex-col gap-1 items-end">
+<div class="text-[9px] text-accent/40">SCANNING_RADAR: 24.52Hz</div>
+<div class="w-32 h-1 bg-primary/20 rounded-full overflow-hidden"><div class="w-2/3 h-full bg-accent animate-pulse"></div></div>
+</div>
+</div></div>
+<!-- RIGHT SIDEBAR: Geolocation & Incidents -->
+<aside class="w-64 flex flex-col gap-1 z-10" data-purpose="sidebar-right">
+<section class="glass-panel p-4 h-1/2 flex flex-col"><h2 class="text-xs font-bold text-accent uppercase mb-3 border-b border-primary/20 pb-1">Packet Inspection</h2>
+<div class="overflow-hidden flex-1 flex flex-col font-mono text-[9px]">
+<div class="grid grid-cols-5 text-accent/50 border-b border-primary/10 pb-1 mb-1">
+<span>SOURCE</span><span>DEST</span><span>SIZE</span><span>PROT</span><span>LAT/LON</span>
+</div>
+<div class="space-y-1 overflow-y-auto" id="packet-grid-container">
+<!-- Dynamic high-density rows -->
+</div>
+</div></section>
+<section class="glass-panel p-4 h-1/2"><h2 class="text-xs font-bold text-accent uppercase mb-3 border-b border-primary/20 pb-1">Anomaly detection</h2>
+<div class="flex-1 flex flex-col gap-2">
+<div class="h-24 bg-primary/5 border border-primary/10 relative overflow-hidden">
+<svg class="w-full h-full" viewbox="0 0 200 60">
+<polyline fill="none" points="0,30 20,25 40,45 60,10 80,35 100,5 120,50 140,20 160,55 180,30 200,40" stroke="#22d3ee" stroke-width="1"></polyline>
+</svg>
+<div class="absolute top-1 left-1 text-[8px] text-accent/40">FLOW_DENSITY</div>
+</div>
+<div class="grid grid-cols-2 gap-2 text-[9px]">
+<div class="p-1 border border-primary/20">ID: <span class="text-white">TX-94</span></div>
+<div class="p-1 border border-primary/20">ST: <span class="text-green-400">STABLE</span></div>
+</div>
+</div></section>
+</aside>
+</main>
+<!-- END: MainDashboardArea -->
+<!-- BEGIN: Footer -->
+<footer class="h-8 glass-panel mx-2 mb-2 flex items-center justify-between px-4 font-mono text-[10px] text-accent/70" data-purpose="status-bar">
+<div class="flex items-center space-x-6">
+<div class="flex items-center">
+<span class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></span>
+        SYSTEM ONLINE
+      </div>
+<div>NETWORK LATENCY: <span class="text-white">12ms</span></div>
+<div>ENCRYPTION: <span class="text-white">AES-256-GCM</span></div>
+</div>
+<div class="flex items-center space-x-4">
+<div>TOTAL NODES: <span class="text-white">45,802</span></div>
+<div class="bg-primary/20 px-2 py-0.5 border border-primary/50 text-white">V.4.2.0-STABLE</div>
+</div>
+</footer>
+<!-- END: Footer -->
+<!-- BEGIN: ScriptLogic -->
+<script data-purpose="clock-logic">
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      document.getElementById('clock-display').textContent = timeStr;
+      document.getElementById('date-display').textContent = dateStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+<script data-purpose="logs-generator">
+    const logContainer = document.getElementById('log-container');
+    const packetGrid = document.getElementById('packet-grid-container');
+    const sources = ['192.168.1.1', '8.8.8.8', '10.0.0.45', '172.16.254.1', '216.58.210.14'];
+    const actions = ['ACCESS_GRANTED', 'SSH_LOGIN', 'PACKET_FILTER', 'TCP_HANDSHAKE', 'AUTH_FAILURE', 'XSS_PREVENTED', 'DDoS_MITIGATED'];
+    
+    function addLog() {
+      const log = document.createElement('div');
+      log.className = 'opacity-80 border-l border-primary/30 pl-2 py-0.5 whitespace-nowrap overflow-hidden text-[9px]';
+      const time = new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const source = sources[Math.floor(Math.random() * sources.length)];
+      const action = actions[Math.floor(Math.random() * actions.length)];
+      
+      log.innerHTML = `<span class="text-primary">[${time}]</span> <span class="text-slate-200">${source}</span> <span class="${action.includes('FAILURE') || action.includes('DDoS') ? 'text-red-400' : 'text-accent'}">${action}</span>`;
+      
+      logContainer.prepend(log);
+      if (logContainer.children.length > 30) logContainer.removeChild(logContainer.lastChild);
+    }
+
+    function addPacketRow() {
+      if(!packetGrid) return;
+      const row = document.createElement('div');
+      row.className = 'grid grid-cols-5 gap-1 border-b border-primary/5 py-1 text-[8px] truncate';
+      const src = sources[Math.floor(Math.random() * sources.length)].split('.').slice(2).join('.');
+      const dst = '10.0.0.' + Math.floor(Math.random()*255);
+      const size = Math.floor(Math.random()*1024) + 'KB';
+      const prot = Math.random() > 0.3 ? 'TCP' : 'UDP';
+      const coords = Math.floor(Math.random()*90) + '/' + Math.floor(Math.random()*180);
+      
+      row.innerHTML = `<span>*${src}</span><span class="text-white">${dst}</span><span class="text-accent">${size}</span><span>${prot}</span><span class="text-[7px]">${coords}</span>`;
+      packetGrid.prepend(row);
+      if (packetGrid.children.length > 20) packetGrid.removeChild(packetGrid.lastChild);
+    }
+
+    setInterval(addLog, 400);
+    setInterval(addPacketRow, 200);
+  </script>
+<script data-purpose="coordinates-logic">
+    const leftCoords = document.getElementById('coords-display-left');
+    const rightCoords = document.getElementById('coords-display-right');
+    
+    function updateCoords() {
+      let leftHtml = '';
+      let rightHtml = '';
+      for(let i=0; i<8; i++) {
+        leftHtml += `LAT: ${(Math.random() * 180 - 90).toFixed(4)} LON: ${(Math.random() * 360 - 180).toFixed(4)}<br/>`;
+        rightHtml += `SIG_STR: ${(Math.random() * 100).toFixed(2)}db NODE_${Math.floor(Math.random()*999)}<br/>`;
+      }
+      leftCoords.innerHTML = leftHtml;
+      rightCoords.innerHTML = rightHtml;
+    }
+    setInterval(updateCoords, 150);
+  </script>
+<script data-purpose="globe-logic">
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    const geometry = new THREE.SphereGeometry(5, 48, 48);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x0f49bd,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.2
+    });
+    const globe = new THREE.Mesh(geometry, material);
+    scene.add(globe);
+
+    // Tracking points
+    const pointsGroup = new THREE.Group();
+    for(let i=0; i<40; i++) {
+        const dotGeom = new THREE.SphereGeometry(0.05, 8, 8);
+        const dotMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+        const dot = new THREE.Mesh(dotGeom, dotMat);
+        const phi = Math.acos(-1 + (2 * i) / 40);
+        const theta = Math.sqrt(40 * Math.PI) * phi;
+        dot.position.setFromSphericalCoords(5.1, phi, theta);
+        pointsGroup.add(dot);
+    }
+    scene.add(pointsGroup);
+
+    const curves = [];
+    for(let i=0; i<25; i++) {
+      const curve = new THREE.EllipseCurve(0, 0, 5.2, 5.2, 0, Math.PI / (1 + Math.random()), false, 0);
+      const pointsData = curve.getPoints(50);
+      const lineGeom = new THREE.BufferGeometry().setFromPoints(pointsData);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.3 });
+      const line = new THREE.Line(lineGeom, lineMat);
+      line.rotation.x = Math.random() * Math.PI;
+      line.rotation.y = Math.random() * Math.PI;
+      scene.add(line);
+      curves.push(line);
+    }
+
+    camera.position.z = 11;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.001;
+      pointsGroup.rotation.y += 0.001;
+      curves.forEach(p => {
+        p.rotation.y += 0.004;
+      });
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    animate();
+  </script>
+<!-- END: ScriptLogic -->
+</body></html>
